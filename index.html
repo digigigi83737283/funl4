@@ -1157,27 +1157,64 @@
   </div>
 </div>
 
-<!-- SCRIPT -->
 <script>
+/* =========================
+   VARIAÇÕES
+========================= */
 const colorVariants = [
-  { key: 'Preta',     img: 'images/1.1',     checkout: 'https://www.pay-pagamentos.link/checkout/6e6374ed-c34e-4991-97bb-1b87ec08459a' },
-  { key: 'Camuflada', img: 'images/1',       checkout: 'https://www.pay-pagamentos.link/checkout/6e6374ed-c34e-4991-97bb-1b87ec08459a' },
+  { key: 'Preta',     img: 'images/1.1', checkout: 'https://www.pay-pagamentos.link/checkout/6e6374ed-c34e-4991-97bb-1b87ec08459a' },
+  { key: 'Camuflada', img: 'images/1',   checkout: 'https://www.pay-pagamentos.link/checkout/6e6374ed-c34e-4991-97bb-1b87ec08459a' },
   { key: 'Azul',      img: 'images/variaaação2222.webp', checkout: 'https://www.pay-pagamentos.link/checkout/4fc158ad-8131-48a2-9a8b-50ecfff95f95' },
-  { key: 'Branca',    img: 'images/1.3',     checkout: 'https://www.pay-pagamentos.link/checkout/c67921e1-95f7-4c93-832a-57bd4f1968da' }
+  { key: 'Branca',    img: 'images/1.3', checkout: 'https://www.pay-pagamentos.link/checkout/c67921e1-95f7-4c93-832a-57bd4f1968da' }
 ];
 
 let selectedVariant = null;
 
+/* =========================
+   UTM HANDLER
+========================= */
+function getUTMs() {
+  const params = new URLSearchParams(window.location.search);
+
+  return {
+    utm_source: params.get('utm_source') || 'site',
+    utm_medium: params.get('utm_medium') || 'modal',
+    utm_campaign: params.get('utm_campaign') || 'produto_box4',
+    utm_content: params.get('utm_content') || 'seletor_cor',
+    utm_term: params.get('utm_term') || ''
+  };
+}
+
+function buildCheckoutURL(baseUrl, variantKey) {
+  const utms = getUTMs();
+  const url = new URL(baseUrl);
+
+  Object.entries(utms).forEach(([key, value]) => {
+    if (value) url.searchParams.set(key, value);
+  });
+
+  // Extras para webhook (muito importante)
+  url.searchParams.set('variant', variantKey);
+  url.searchParams.set('cor', variantKey);
+  url.searchParams.set('origin_page', window.location.pathname);
+
+  return url.toString();
+}
+
+/* =========================
+   MODAL
+========================= */
 function abrirModal() {
   const modal = document.getElementById('meuModal');
   modal.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
   renderColorOptions();
 
+  // Prefetch com UTMs já aplicadas
   colorVariants.forEach(v => {
     const link = document.createElement('link');
     link.rel = 'prefetch';
-    link.href = v.checkout;
+    link.href = buildCheckoutURL(v.checkout, v.key);
     document.head.appendChild(link);
   });
 }
@@ -1188,16 +1225,22 @@ function fecharModal() {
   document.body.style.overflow = '';
 }
 
+/* =========================
+   RENDER
+========================= */
 function renderColorOptions() {
   const container = document.getElementById('colors-list');
   container.innerHTML = '';
+
   colorVariants.forEach(variant => {
     const div = document.createElement('div');
     div.className = 'cursor-pointer rounded-lg p-2 flex flex-col items-center border border-gray-200 hover:shadow-md transition';
+
     div.innerHTML = `
       <img src="https://globodigitalmundo.shop/box4/${variant.img}" alt="${variant.key}" class="w-full h-32 object-contain rounded-md mb-2">
       <p class="text-sm font-medium text-gray-800">${variant.key}</p>
     `;
+
     div.addEventListener('click', () => onSelectVariant(div, variant));
     container.appendChild(div);
   });
@@ -1219,12 +1262,24 @@ function onSelectVariant(div, variant) {
   btn.onclick = goToCheckout;
 }
 
+/* =========================
+   CHECKOUT
+========================= */
 function goToCheckout() {
   if (!selectedVariant) return;
+
   fecharModal();
-  window.location.replace(selectedVariant.checkout);
+
+  const checkoutURL = buildCheckoutURL(
+    selectedVariant.checkout,
+    selectedVariant.key
+  );
+
+  // replace mantém histórico limpo e não quebra pixel
+  window.location.replace(checkoutURL);
 }
 </script>
+
 
 
   <!-- Seus arquivos JS -->
